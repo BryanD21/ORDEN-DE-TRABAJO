@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generar Orden de Trabajo - LENSOR</title>
+    <style>
+        /* Estilos CSS del formulario */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-top: 50px;
+            border-radius: 8px;
+        }
+        h1 {
+            color: #003366;
+            text-align: center;
+        }
+        label {
+            display: block;
+            margin: 10px 0 5px;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="tel"],
+        input[type="number"],
+        textarea {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            resize: vertical;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #003366;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #002244;
+        }
+        .spinner {
+            display: none;
+            margin: 20px auto;
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #003366;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>LENSOR - Orden de Trabajo</h1>
+        <form id="workOrderForm">
+            <label for="cliente">Nombre del Cliente</label>
+            <input type="text" id="cliente" name="cliente" required>
+
+            <label for="telefono">Número de Teléfono</label>
+            <input type="tel" id="telefono" name="telefono" required>
+
+            <label for="direccion">Dirección</label>
+            <input type="text" id="direccion" name="direccion" required>
+
+            <label for="descripcion">Descripción de Producto o Servicio</label>
+            <input type="text" id="descripcion" name="descripcion" required>
+
+            <label for="tecnico">Nombre del Técnico</label>
+            <input type="text" id="tecnico" name="tecnico" required>
+
+            <label for="fecha_solicitud">Fecha de Solicitud</label>
+            <input type="date" id="fecha_solicitud" name="fecha_solicitud" required>
+
+            <label for="fecha">Fecha de Entrega</label>
+            <input type="date" id="fecha" name="fecha" required>
+
+            <label for="precio">Precio Final (GTQ)</label>
+            <input type="number" id="precio" name="precio" step="0.01" required>
+
+            <label for="adelanto">Adelanto (GTQ) <small>(opcional)</small></label>
+            <input type="number" id="adelanto" name="adelanto" step="0.01">
+
+            <label for="comentarios">Comentarios Adicionales</label>
+            <textarea id="comentarios" name="comentarios" rows="4"></textarea>
+
+            <button type="submit">Generar PDF</button>
+
+            <!-- Spinner de carga -->
+            <div class="spinner" id="spinner"></div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.16/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        document.getElementById('workOrderForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            // Mostrar el spinner de carga
+            document.getElementById('spinner').style.display = 'block';
+
+            // Simulación de una pequeña pausa para ver la animación
+            setTimeout(function() {
+                const cliente = document.getElementById('cliente').value;
+                const telefono = document.getElementById('telefono').value;
+                const direccion = document.getElementById('direccion').value;
+                const descripcion = document.getElementById('descripcion').value;
+                const tecnico = document.getElementById('tecnico').value;
+                const fechaSolicitud = document.getElementById('fecha_solicitud').value;
+                const fechaEntrega = document.getElementById('fecha').value;
+                const adelanto = document.getElementById('adelanto').value || "No especificado"; 
+                const precio = document.getElementById('precio').value || "No especificado"; 
+                const comentarios = document.getElementById('comentarios').value;
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                // Membretado
+                doc.setFontSize(16);
+                doc.setFont('Arial', 'bold');
+                doc.text("LENSOR", 105, 10, null, null, "center");
+
+                // Datos para la tabla
+                const tableData = [
+                    ["Descripción", "Detalle"],
+                    ["Cliente", cliente],
+                    ["Teléfono", telefono],
+                    ["Dirección", direccion],
+                    ["Descripción de Producto o Servicio", descripcion],
+                    ["Nombre del Técnico", tecnico],
+                    ["Fecha de Solicitud", fechaSolicitud],
+                    ["Fecha de Entrega", fechaEntrega],
+                    ["Precio Final (GTQ)", precio],
+                    ["Adelanto (GTQ)", adelanto],
+                    ["Comentarios Adicionales", comentarios]
+                ];
+
+                // Generar tabla
+                doc.autoTable({
+                    startY: 20,
+                    head: [['Descripción', 'Detalle']],
+                    body: tableData.map(row => [row[0], row[1]]),
+                    theme: 'striped',
+                    margin: { left: 10, right: 10 },
+                    styles: {
+                        cellPadding: 4, // Reduce el relleno de la celda
+                        fontSize: 10,
+                        lineWidth: 0.1,
+                        lineColor: [44, 62, 80],
+                        font: 'bold'
+                    },
+                    headStyles: {
+                        fontSize: 10,
+                        font: 'bold',
+                        textColor: [255, 255, 255],
+                        fillColor: [0, 51, 102]
+                    },
+                    columnStyles: {
+                        0: { cellWidth: 50 }, // Ancho de la columna "Descripción"
+                        1: { cellWidth: 140 } // Ancho de la columna "Detalle"
+                    }
+                });
+
+                // Línea de firma
+                const finalY = doc.autoTable.previous.finalY + 40; // Ajuste para la firma
+                doc.setLineWidth(0.5);
+                doc.line(20, finalY, 190, finalY);
+                doc.text("Firma del Cliente", 105, finalY + 10, null, null, "center");
+
+                // Pie de página
+                doc.setFontSize(8);
+                doc.setFont('Arial', 'normal');
+                doc.text("Dirección: 6Ta Avenida 6-92, Z1 Escuintla, Escuintla.", 105, 270, null, null, "center");
+                doc.text("Teléfono: +502 5871-0789", 105, 275, null, null, "center");
+                doc.text("Cualquier adelanto o abono aquí dado, no tiene devolución alguna", 105, 280, null, null, "center");
+
+                // Nombre del archivo como "Cliente_Fecha.pdf"
+                const fileName = `${cliente}_${fechaEntrega}.pdf`;
+                doc.save(fileName);
+
+                // Ocultar el spinner de carga
+                document.getElementById('spinner').style.display = 'none';
+
+                // Limpiar el formulario después de generar el PDF
+                document.getElementById('workOrderForm').reset();
+
+            }, 1000); // Simulación de espera
+        });
+    </script>
+</body>
+</html>
